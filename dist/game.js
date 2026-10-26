@@ -41,14 +41,7 @@ function normalizeInventory(s){const d=inventoryDefaults();s.owned=[...new Set([
 const equipItem=slot=>items.find(i=>i.id===save.equipped[slot]);
 const bonus=key=>Object.values(save.equipped).reduce((n,id)=>n+(items.find(i=>i.id===id)?.[key]||0),0);
 let growthTab='stats',shopTab='tool',snackUntil=0,blast=false;
-
-function itemIcon(i){
- const keys={pick:'pickaxe',hammer:'ironpick',drill:'drill',boot:'ui_speed',bag:'bag',lamp:'lantern',battery:'batteryitem',clover:'ui_luck',coin:'item_coin',skin:i?.id==='robot'?'robot0':'miner0',bomb:'bomb',cookie:'item_gold'};
- const k=keys[i.icon]||'item_coin',r=PIX_SPR[k],s=Math.min(46/r[2],46/r[3]);
- const left=(50-r[2]*s)/2-r[0]*s,top=(50-r[3]*s)/2-r[1]*s;
- return '<span class="item-icon" aria-hidden="true" style="display:inline-block;position:relative;width:50px;height:50px;min-width:50px;overflow:hidden;vertical-align:middle"><img alt="" src="pixel-art.0.2.webp" style="position:absolute;max-width:none;left:'+left+'px;top:'+top+'px;width:'+(2048*s)+'px;height:'+(1299*s)+'px;image-rendering:pixelated"></span>';
-}
-
+function itemIcon(i){const color=i.color||'#94cbbb',shapes={pick:'<path d="m23 48 21-30"/><path d="M16 19Q36 4 53 25L39 19 26 24Z" fill="#93c9d6"/>',hammer:'<path d="m24 50 18-28"/><path d="m22 12 29 14-8 17-29-14Z" fill="#aabccc"/>',drill:'<path d="M12 19h28v22H12z" fill="#f0c36b"/><path d="m40 21 18 9-18 9Z" fill="#b0c7d3"/><path d="M18 41v13h11V41" fill="#829a96"/><path d="m44 25 0 9m5-6v5"/>',boot:'<path d="M21 11h20v27l13 5v10H17V35h4Z" fill="#b6c9e7"/>',bag:'<rect x="16" y="16" width="37" height="40" rx="10" fill="#efc291"/><path d="M26 16v-5h17v5M22 36h25v13H22Z"/>',lamp:'<path d="M24 16v-6h20v6M20 18h28l5 34H15Z" fill="#f4d476"/><path d="M25 25h18v19H25Z" fill="#fff6c2"/>',battery:'<rect x="19" y="15" width="29" height="40" rx="6" fill="#9bd4b3"/><path d="M28 15V9h12v6M36 24l-8 12h11l-7 12"/>',clover:'<path d="M34 34C5 31 15 6 32 23 49 3 65 26 40 34 65 49 43 66 34 44 15 65 2 40 27 34Z" fill="#9bce9b"/>',coin:'<circle cx="34" cy="34" r="22" fill="#f4d37e"/><path d="M40 23H29v11h11v11H27M34 18v32"/>',skin:`<path d="M19 53V32h30v21Z" fill="#bd9976"/><path d="M13 32V22Q13 8 34 8t21 14v10Z" fill="${color}"/><path d="M9 32h50M22 38h24v8H22Z"/><rect x="29" y="15" width="10" height="10" fill="#fff0ac"/>`,bomb:'<circle cx="33" cy="38" r="19" fill="#a1b1c5"/><path d="M35 19q-3-15 12-10M47 5v9m-5-5h10"/>',cookie:'<circle cx="34" cy="34" r="22" fill="#e3bb85"/><path d="m24 25 2 1m16-3 2 2m-10 12 2 1m9 8 2 1m-24-4 2 1"/>'};return `<svg class="item-icon" viewBox="0 0 68 68" aria-hidden="true"><g fill="none" stroke="#455e59" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${shapes[i.icon]}</g></svg>`}
 function effectiveHTML(){return `<div class="effective"><h3>최종 능력치</h3><div><span>채굴 피해</span><b>${power()}</b></div><div><span>이동 속도</span><b>${(moveSpeed()/T).toFixed(2)}칸/초</b></div><div><span>채굴 속도</span><b>초당 ${(1/interval()).toFixed(2)}회</b></div><div><span>가방 / 탐험 시간</span><b>${bagMax()}칸 / ${Math.round(duration())}초</b></div><div><span>치명타 / 추가 광물</span><b>${(critChance()*100).toFixed(1)}% / ${(bonusChance()*100).toFixed(1)}%</b></div></div>`}
 function showGear(){growthTab='equipment';showStats()}
 function showStats(){const points=freePoints();openSheet('stats','광부 성장',`<div class="growth-hero">${itemIcon(equipItem('skin'))}<div><span class="tag">Lv.${level()}</span><h2>${equipItem('skin').name}</h2><p>사용 가능한 포인트 ${points} / 보유 ${num(save.coins)}G</p></div></div><div class="tabs"><button data-growth="stats" class="${growthTab==='stats'?'selected':''}">스탯 배분</button><button data-growth="equipment" class="${growthTab==='equipment'?'selected':''}">장착 장비</button></div>${growthTab==='stats'?`<p class="intro">스탯은 광부의 기본 능력입니다. 이동 속도는 신발, 채굴 속도는 도구에서 각각 조절합니다.</p>${statDefs.map(d=>`<div class="stat-row"><div class="stat-copy"><h3>${d.name} ${save.stats[d.key]}</h3><p>${d.desc}</p></div><div class="stat-buttons"><button class="secondary" data-stat="${d.key}" ${mode!=='town'||!points?'disabled':''}>+1</button><button class="secondary" data-stat="${d.key}" data-amount="10" ${mode!=='town'||!points?'disabled':''}>+${Math.min(10,points)||10}</button></div></div>`).join('')}<button class="primary secondary" data-act="resetStats" ${mode!=='town'?'disabled':''}>무료 재분배</button><p class="note">처음 3포인트, 레벨마다 3포인트. 광물별 누적 10개, 30개, 100개 수집마다 1포인트를 받습니다.</p>`:`<p class="intro">각 부위는 하나만 장착합니다. 장비 교체와 스탯 배분은 마을에서 가능합니다.</p>${Object.entries(slots).map(([slot,name])=>`<section class="equipment-group"><h3>${name}</h3>${items.filter(i=>i.slot===slot&&save.owned.includes(i.id)).map(i=>`<div class="item-row">${itemIcon(i)}<div><h3>${i.name}</h3><p>${i.desc}</p></div><button class="secondary" data-equip="${i.id}" ${save.equipped[slot]===i.id||mode!=='town'?'disabled':''}>${save.equipped[slot]===i.id?'장착 중':'장착'}</button></div>`).join('')||'<p class="note">장비가 없습니다. 상점에서 구입할 수 있습니다.</p>'}</section>`).join('')}<button class="primary" data-act="shop">아이템 상점 열기</button>`}${effectiveHTML()}<p class="note">기존 장비 강화 효과는 기본 능력에 보존했습니다. 기존 민첩 포인트는 돌려드렸습니다. 스탯은 속도에 영향을 주지 않습니다.</p>`)}
@@ -126,27 +119,6 @@ document.addEventListener('pointerdown',down,{passive:false});document.addEventL
 document.addEventListener('keydown',e=>{if(['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;if(e.key==='Escape'){if(openPanel){manualPause=false;closeSheet()}else $('pause').click();return}if(paused)return;const k=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright',' ','e'].includes(k)){e.preventDefault();if(k===' '||k==='e'){if(!e.repeat)interact()}else{keys.add(k);route=[];goal=null}}});document.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
 function suspend(){persist();resetInput();if(!paused){manualPause=true;openSheet('pause','탐험이 일시정지되었습니다','<p class="intro">자리를 비운 동안 배터리는 소모되지 않습니다.</p><button class="primary" id="resumeButton">이어서 플레이</button>');$('resumeButton').onclick=()=>{manualPause=false;closeSheet()}}}document.addEventListener('visibilitychange',()=>{if(document.hidden)suspend()});window.addEventListener('blur',suspend);window.addEventListener('pagehide',persist);
 function updateUI(){near=nearest();$('app').dataset.mode=mode;$('coins').textContent=num(save.coins);$('area').textContent=mode==='town'?'지상 기지 / 0.7.1':`${areaInfo().name} / 지하 ${floor}층`;$('energyText').textContent=Math.ceil(energy)+'%';$('energyBar').style.width=energy+'%';$('energyBar').style.background=energy<20?'#e59176':'#91d4ad';const count=bag.reduce((a,b)=>a+b,0);$('bagText').textContent=count+' / '+bagMax();$('bagBar').style.width=count/bagMax()*100+'%';$('level').textContent=level();$('skill').textContent=skillCharge>=100?'집중 굴착!':`굴착 ${Math.floor(skillCharge)}%`;$('skill').disabled=mode!=='mine'||skillCharge<100;$('skill').style.display=mode==='mine'?'block':'none';$('skill').classList.toggle('ready',skillCharge>=100);const sb=document.querySelector('[data-panel="stats"]');if(sb)sb.innerHTML='성장'+(freePoints()?` <b class="badge">${freePoints()}</b>`:'');$('home').textContent=mode==='mine'?'마을 귀환':'마을 지도';$('auto').classList.toggle('on',save.settings.auto);$('auto').setAttribute('aria-pressed',String(save.settings.auto));$('auto').innerHTML='자동 채굴<br><small>'+(save.settings.auto?'켜짐':'꺼짐')+'</small>';$('interact').innerHTML=(near?.action||(mode==='town'?'광산 선택':'채굴'))+' <span>'+(mode==='town'?'↗':'⛏')+'</span>';const ready=quests.filter(q=>q.value()>=q.goal&&!save.claims.includes(q.id)).length;const qbutton=document.querySelector('[data-panel="quest"]');qbutton.innerHTML='의뢰'+(ready?` <b class="badge">${ready}</b>`:'');$('objectiveText').textContent=mode==='town'?(near?near.name+' 앞입니다. 아래 버튼으로 이용하세요.':'광산 선택 → 채굴 → 귀환 후 판매'):(count>=bagMax()?'가방이 가득 찼습니다. 귀환해 판매하세요.':energy<20?'배터리가 부족합니다. 귀환을 준비하세요.':`사다리를 찾아 아래층으로 / 가방 가치 ${num(worth())}G`);$('contextHint').textContent=route.length?'목적지로 이동 중 / 드래그하면 직접 조작':mode==='town'?'건물을 누르면 입구까지 이동합니다.':near?.id==='stairs'?'아래층 통로를 발견했습니다.': '광석을 누르면 접근 후 채굴 / 어디서나 드래그 이동';document.querySelector('[data-panel="town"]').classList.toggle('active',mode==='town')}
-
-const PIX_SPR={"grass":[0,0,89,92],"grass2":[92,0,83,90],"grass3":[178,0,87,87],"grass_flower":[268,0,88,78],"dirtpath":[359,0,85,90],"dirtpath2":[447,0,87,89],"stonepath":[537,0,93,88],"stonepath2":[633,0,81,90],"cliff":[717,0,97,104],"water":[817,0,82,102],"water2":[902,0,96,101],"groundrock":[1001,0,114,97],"groundrock2":[1118,0,120,95],"bush":[1241,0,139,114],"flowers":[1383,0,87,120],"tree_stump":[1473,0,116,142],"ruinwall":[1592,0,179,96],"pillar":[1774,0,87,108],"minegate":[0,145,254,252],"camp":[257,145,265,227],"shrine":[525,145,270,258],"sign":[798,145,123,218],"cart":[924,145,131,114],"crystal_decor":[1058,145,114,127],"logpile":[1175,145,192,137],"grassclump":[1370,145,90,127],"soil":[1463,145,98,101],"soil2":[1564,145,97,101],"soil3":[1664,145,99,102],"compact":[1766,145,97,102],"rock":[1866,145,100,101],"rock2":[0,406,97,102],"mossrock":[100,406,99,102],"hardrock":[202,406,101,101],"deepstone":[306,406,104,102],"deepstone2":[413,406,101,104],"cavefloor":[517,406,101,103],"cavefloor2":[621,406,98,103],"cavefloor3":[722,406,93,103],"support":[818,406,138,187],"ladder":[959,406,100,169],"exit":[1062,406,131,165],"minehole":[1196,406,148,163],"rubble":[1347,406,131,103],"stalagmite":[1481,406,181,108],"lava":[1665,406,104,106],"waterdeep":[1772,406,98,113],"coal":[1873,406,98,102],"copper":[0,596,101,101],"iron":[104,596,95,100],"silver":[202,596,96,100],"gold":[301,596,98,101],"sapphire":[402,596,99,100],"ruby":[504,596,97,100],"emerald":[604,596,98,101],"amethyst":[705,596,106,100],"crack":[814,596,102,120],"gas":[919,596,103,102],"rarecrystal":[1025,596,107,113],"miner0":[1135,596,89,150],"robot0":[1227,596,92,152],"miner1":[1322,596,93,150],"robot1":[1418,596,90,152],"miner2":[1511,596,91,149],"robot2":[1605,596,88,152],"miner3":[1696,596,93,150],"robot3":[1792,596,91,152],"miner4":[1886,596,94,150],"robot4":[0,751,94,152],"miner5":[97,751,94,150],"robot5":[194,751,94,152],"miner6":[291,751,83,150],"robot6":[377,751,84,152],"pickaxe":[464,751,110,120],"ironpick":[577,751,107,121],"drill":[687,751,136,130],"bomb":[826,751,102,139],"lantern":[931,751,78,117],"bag":[1012,751,109,127],"batteryitem":[1124,751,71,117],"radar":[1198,751,87,133],"chest":[1288,751,154,158],"openchest":[1445,751,152,195],"orecart":[1600,751,197,183],"lamp":[1800,751,112,187],"shop":[0,949,204,178],"forge":[207,949,261,188],"elevator":[471,949,121,210],"signpost":[595,949,164,198],"charger":[762,949,229,214],"fire":[994,949,163,204],"mineentry":[1160,949,382,226],"barrel":[1545,949,126,150],"item_coin":[1674,949,76,89],"item_crystal":[1753,949,86,91],"item_coal":[1842,949,92,83],"item_copper":[1937,949,92,88],"item_iron":[0,1178,90,83],"item_silver":[93,1178,86,88],"item_gold":[182,1178,79,89],"item_blue":[264,1178,85,106],"item_red":[352,1178,78,105],"item_green":[433,1178,93,100],"item_purple":[529,1178,80,110],"ui_bag":[612,1178,85,119],"ui_upgrade":[700,1178,89,119],"ui_map":[792,1178,90,119],"ui_home":[885,1178,85,119],"ui_depth":[973,1178,88,119],"ui_battery":[1064,1178,86,119],"ui_capacity":[1153,1178,86,119],"ui_speed":[1242,1178,80,119],"ui_power":[1325,1178,82,119],"ui_luck":[1410,1178,80,119],"ui_auto":[1493,1178,135,119]};
-const PIX_ATLAS=new Image();let PIX_READY=false;
-PIX_ATLAS.onload=()=>{PIX_READY=true;townCache=null};
-PIX_ATLAS.src='pixel-art.0.2.webp';
-function pixel(name,x,y,w,h,alpha=1){
- const r=PIX_SPR[name];if(!PIX_READY||!r)return false;
- c.save();c.globalAlpha*=alpha;c.imageSmoothingEnabled=false;
- c.drawImage(PIX_ATLAS,r[0],r[1],r[2],r[3],Math.round(x),Math.round(y),Math.ceil(w),Math.ceil(h));c.restore();return true;
-}
-const PIX_ORE={'구리':'copper','철':'iron','은':'silver','금':'gold','루비':'ruby','다이아':'amethyst','에메랄드':'emerald','숲호박':'copper','이끼보석':'emerald','수정조각':'sapphire','자수정':'amethyst','산호석':'ruby','진주':'silver','눈꽃석':'silver','얼음보석':'sapphire','별조각':'gold','달빛보석':'rarecrystal'};
-function pixelRock(t,x,y){
- let name;
- if(t.k==='dirt')name=['soil','soil2','soil3','compact'][Math.abs(t.v||0)%4];
- else if(t.k==='bedrock')name='deepstone2';
- else if(t.k==='ore')name=PIX_ORE[ores[t.ore]?.name]||'rarecrystal';
- else name=(t.hp>8?'hardrock':((t.v||0)%3===0?'rock':'rock2'));
- if(!pixel(name,x,y,T,T)){c.fillStyle='#6b6470';c.fillRect(x,y,T,T)}
- if(t.core)pixel('rarecrystal',x-4,y-5,T+8,T+8,.9);
- if(t.hp<t.max)pixel('crack',x+3,y+3,T-6,T-6,Math.min(.9,1-t.hp/t.max));
-}
 function rr(x,y,w,h,r,fill,stroke){c.beginPath();c.roundRect(x,y,w,h,r);if(fill){c.fillStyle=fill;c.fill()}if(stroke){c.strokeStyle=stroke;c.lineWidth=1.5;c.stroke()}}
 function ellipse(x,y,rx,ry,color){c.fillStyle=color;c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);c.fill()}
 function poly(points,fill,stroke){c.beginPath();points.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();if(fill){c.fillStyle=fill;c.fill()}if(stroke){c.strokeStyle=stroke;c.lineWidth=2;c.stroke()}}
@@ -213,114 +185,15 @@ function pixelPlayerDraw(){
 }
 window.addEventListener('deepmine-pixel-ready',()=>{townCache=null});
 
-
-function tree(x,y,s=1){pixel('tree_stump',x-28*s,y-37*s,56*s,70*s);pixel('bush',x-22*s,y-21*s,44*s,36*s)}
-
-
-function building(b){
- const kind={mine:'mineentry',gear:'forge',market:'shop',quest:'signpost',inn:'camp'}[b.id]||'camp';
- const x=b.x,y=b.y,w=b.w,h=b.h;
- pixel(kind,x-15,y-30,w+30,h+55);
- const titleW=Math.max(104,b.name.length*15+28);
- rr(x+w/2-titleW/2,y-44,titleW,27,5,'#192b2bec','#d0b887');
- label(b.name,x+w/2,y-25,'#ffe8ad',13);
- label({mine:'탐험 출발',gear:'구매와 장착',market:'광물 도감',quest:'목표와 보상',inn:'자동 채굴'}[b.id],x+w/2,y+h+25,'#2b4035',12);
-}
-
-
-function flower(x,y,s=1){pixel('flowers',x-10*s,y-12*s,20*s,23*s)}
-
-
-function npc(x,y,color,hat=false){
- pixel(hat?'miner0':'robot0',x-16,y-40,32,48);
-}
-
-
-function townScene(){
- c.fillStyle='#486c3f';c.fillRect(0,0,1100,1050);
- for(let y=0;y<1050;y+=70)for(let x=0;x<1100;x+=70){
-  const n=(Math.floor(x/70)*13+Math.floor(y/70)*17)%11;
-  pixel(n===0?'grass_flower':n%3===0?'grass2':'grass',x,y,70,70);
- }
- for(const [cx,cy,rw,rh] of [[515,510,98,530],[235,428,650,82],[515,260,90,300],[520,760,385,90],[228,800,550,82]]){
-  for(let y=cy-Math.floor(rh/2);y<cy+rh/2;y+=65)
-   for(let x=cx-Math.floor(rw/2);x<cx+rw/2;x+=65)pixel((x+y)%3?'dirtpath':'stonepath',x,y,65,65);
- }
- for(const [x,y,s] of [[60,90,1.4],[100,170,1.1],[1030,120,1.3],[1020,530,1.4],[1010,900,1.3],[80,950,1.4],[380,950,1],[390,90,1.1],[64,530,1.1],[400,700,.8],[720,970,.8]])tree(x,y,s);
- for(const [x,y,s] of [[455,420,1],[640,450,1.2],[315,595,1],[735,625,.7],[170,650,.9],[865,955,1.1]]){
-  pixel('ruinwall',x,y,115*s,68*s);pixel('groundrock',x-10,y+50,52*s,48*s);
- }
- pixel('shrine',441,448,180,133);
- for(const [x,y] of [[230,280],[625,360],[90,790],[925,615],[350,920],[750,210]])pixel('grassclump',x,y,51,52);
- for(const [x,y] of [[258,670],[360,675],[780,510],[680,875],[925,900],[500,380]])flower(x,y,1.4);
- for(const b of buildings)building(b);
- npc(350,470,'#c3995d',true);npc(745,815,'#748b98');npc(314,846,'#899075',true);
- label('정비사',350,432,'#fcf1d0',12);
- label('거래 담당',745,776,'#fcf1d0',12);
-}
-
-
-function gem(x,y,o,rich=false){
- const name=PIX_ORE[o.name]||'rarecrystal';pixel(name,x-19,y-19,38,38);
- if(rich)pixel('rarecrystal',x+8,y-19,20,23,.8);
-}
-
-
-function mineDraw(){
- const x0=Math.max(0,Math.floor((cam.x-vw/zoom/2)/T)-1),x1=Math.min(gw-1,Math.ceil((cam.x+vw/zoom/2)/T)+1);
- const y0=Math.max(0,Math.floor((cam.y-vh/zoom/2)/T)-1),y1=Math.min(gh-1,Math.ceil((cam.y+vh/zoom/2)/T)+1);
- c.fillStyle='#17242c';c.fillRect(0,0,gw*T,gh*T);
- for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
-  const t=tile(x,y),xx=x*T,yy=y*T,seen=discovered[y]?.[x],visible=dist(p,center(x,y))<view();
-  if(!seen){c.fillStyle='#141d29';c.fillRect(xx,yy,T+.5,T+.5);continue}
-  if(['dirt','rock','ore','bedrock'].includes(t.k)){
-   pixelRock(t,xx,yy);
-   if(t.k==='ore'&&visible&&ores[t.ore]){rr(xx+1,yy+30,T-2,11,2,'#182333bb');label(ores[t.ore].name,xx+T/2,yy+38,'#f8e5ba',9)}
-   if(t.hp<t.max){rr(xx+5,yy+4,32,3,1,'#292333aa');rr(xx+5,yy+4,32*Math.max(0,t.hp/t.max),3,1,'#f1ca7a')}
-  }else{
-   const n=(x*7+y*11)%5;
-   const floorSprite=area==='tide'&&n===0?'waterdeep':area==='astral'&&n===0?'deepstone':area==='frost'?'cavefloor3':n%3===0?'cavefloor2':'cavefloor';
-   if(!pixel(floorSprite,xx,yy,T,T)){c.fillStyle='#3b3a43';c.fillRect(xx,yy,T,T)}
-   if(t.k==='stairs'){pixel('ladder',xx-4,yy-10,T+8,T+16);label('아래층',xx+T/2,yy-8,'#ffe6a9',10)}
-   if(t.k==='chest')pixel('chest',xx-2,yy-7,T+4,T+10);
-   if(t.k==='charger')pixel('charger',xx-4,yy-8,T+8,T+12);
-  }
-  if(!visible){c.fillStyle='#101c2c99';c.fillRect(xx,yy,T+.5,T+.5)}
- }
- for(const e of enemies){
-  if(dist(e,p)>view())continue;
-  pixel('stalagmite',e.x-19,e.y-24,38,39);
-  c.fillStyle='#e8a0ac';c.fillRect(e.x-7,e.y-5,4,3);c.fillRect(e.x+4,e.y-5,4,3);
-  if(e.hp<e.max){rr(e.x-14,e.y-23,28,4,2,'#281d24');rr(e.x-14,e.y-23,28*e.hp/e.max,4,2,'#ee9e9f')}
- }
-}
-
-
-function playerDraw(){
- const moving=!!(input?.drag||keys.size||route.length);
- const isRobot=equipItem('skin')?.id==='robot';
- const frameNum=moving?(1+Math.floor(walk*3)%6):0;
- const ang=Number.isFinite(p.angle)?p.angle:(p.face<0?Math.PI:0);
- let direction=0;
- if(ang>Math.PI/4&&ang<3*Math.PI/4)direction=3;
- else if(ang< -Math.PI/4&&ang> -3*Math.PI/4)direction=5;
- else if(Math.abs(ang)>3*Math.PI/4)direction=2;
- const frame=(direction+frameNum)%7;
- const skin=equipItem('skin')?.id;
- const tint={bunny:'hue-rotate(250deg)',mole:'sepia(.5) saturate(.75)',star:'hue-rotate(110deg)'}[skin]||'none';
- ellipse(p.x,p.y+9,17,6,'#172d324b');
- c.save();c.filter=tint;
- pixel((isRobot?'robot':'miner')+frame,p.x-23,p.y-40,46,54);
- c.restore();
- if(attackClock>0&&mode==='mine'){
-  c.save();c.translate(p.x+(p.face||1)*17,p.y-5);
-  c.rotate((p.face||1)*(-.4-Math.sin(attackClock/interval()*Math.PI)*.6));
-  pixel(equipItem('tool')?.icon==='drill'?'drill':'pickaxe',-14,-28,28,32);
-  c.restore();
- }
- if(clock-skillRing<.6){const age=clock-skillRing;c.strokeStyle='rgba(247,199,106,'+(1-age/.6)+')';c.lineWidth=3;c.beginPath();c.arc(p.x,p.y,25+age*150,0,7);c.stroke()}
-}
-
+function tree(x,y,s=1){c.save();c.translate(x,y);c.scale(s,s);ellipse(6,17,25,7,'#263c3622');rr(-4,-13,8,35,1,'#765b43');poly([[-25,3],[0,-49],[25,3]],'#4f7164');poly([[-20,-13],[0,-58],[20,-13]],'#638878');poly([[0,-58],[0,3],[25,3]],'#405e55');c.restore()}
+function building(b){const {x,y,w,h}=b,accent={mine:'#d39a36',gear:'#d88937',market:'#4e8a88',quest:'#567b9b',inn:'#658264'};rr(x+8,y+17,w,h,3,'#24383228');if(b.id==='mine'){poly([[x-10,y+h],[x+4,y+34],[x+47,y-7],[x+w-32,y+4],[x+w+15,y+63],[x+w,y+h]],'#818c84','#536259');rr(x+36,y+45,w-72,h-44,3,'#24332f');rr(x+29,y+37,w-58,13,1,'#a37c4c','#514d3b');rr(x+34,y+49,11,h-44,1,'#b99666');rr(x+w-45,y+49,11,h-44,1,'#b99666');for(let i=0;i<5;i++)rr(x+49,y+h-12+i*9,w-98,4,0,'#727c73');rr(x+53,y+h-15,4,62,0,'#a8b1aa');rr(x+w-57,y+h-15,4,62,0,'#a8b1aa');rr(x+47,y+47,7,18,2,'#ffda75');rr(x+w-54,y+47,7,18,2,'#ffda75')}else{rr(x,y+29,w,h-29,2,'#e4e2d8','#67766e');poly([[x-8,y+35],[x+26,y-7],[x+w-22,y-7],[x+w+8,y+35]],b.id==='gear'?'#a76f4e':'#607b78','#465b57');for(let i=1;i<7;i++){c.strokeStyle='#ffffff23';c.lineWidth=1;c.beginPath();c.moveTo(x+26+i*(w-48)/7,y-3);c.lineTo(x+6+i*(w-10)/7,y+31);c.stroke()}rr(x+w/2-25,y+h-55,50,55,1,'#455d5b');for(let i=0;i<5;i++)rr(x+w/2-22,y+h-50+i*9,44,2,0,'#708a84');for(const xx of [x+15,x+w-50]){rr(xx,y+53,35,27,1,'#526f78','#485f5b');rr(xx+3,y+56,29,3,0,'#a9c9ce');rr(xx+16,y+55,2,23,0,'#b8c7bf')}rr(x-4,y+32,w+8,7,1,accent[b.id]);if(b.id==='gear'){rr(x-24,y+h-19,35,16,1,'#536367');rr(x-16,y+h-3,7,15,0,'#7b674f');rr(x+1,y+h-3,7,15,0,'#7b674f');label('⚒',x+w/2,y+65,'#e4ad50',24)}if(b.id==='market'){for(let i=0;i<3;i++)rr(x+w+4+i*6,y+h-24-i*8,26,23,1,'#bda078','#76694f');label('G',x+w/2,y+65,'#e2c66c',22)}if(b.id==='quest'){rr(x+w+8,y+58,44,54,1,'#ad8b59','#735f42');rr(x+w+14,y+64,30,38,0,'#f4f1df');label('의뢰',x+w+29,y+87,'#4c5e54',10)}if(b.id==='inn'){rr(x+w+6,y+h-36,38,32,2,'#6a7c75','#435c51');ellipse(x+w+25,y+h-20,10,10,'#334e48');label('↻',x+w+25,y+h-16,'#c0d2c8',16)}}const width=Math.max(110,b.name.length*14+24);rr(x+w/2-width/2,y-41,width,28,3,'#f7f8f2','#61746b');rr(x+w/2-width/2,y-41,4,28,0,accent[b.id]);label(b.name,x+w/2,y-22,'#263e35',13);label({mine:'탐험 출발',gear:'구매 / 장착',market:'광물 도감',quest:'목표 / 보상',inn:'자동 채굴'}[b.id],x+w/2,y+h+28,'#364d40',11)}
+function flower(x,y,s=1){c.save();c.translate(x,y);c.scale(s,s);for(let i=0;i<5;i++){const a=i*Math.PI*2/5;ellipse(Math.cos(a)*4,Math.sin(a)*4,3.4,3.4,'#f4dfc5')}ellipse(0,0,2.4,2.4,'#dfb96d');c.restore()}
+function npc(x,y,color,hat=false){ellipse(x,y+5,10,4,'#243e3328');rr(x-8,y-18,16,20,3,color,'#4a6157');rr(x-7,y+1,5,9,1,'#465b59');rr(x+2,y+1,5,9,1,'#465b59');rr(x-7,y-30,14,13,4,'#cca582');rr(x-9,y-33,18,7,2,hat?'#cda54b':'#526b65');rr(x-4,y-25,9,3,1,'#394d47')}
+function townScene(){if(window.DeepminePixelArt?.ready){pixelTownScene();return}c.fillStyle='#b8c6aa';c.fillRect(0,0,1100,1050);c.lineCap='square';c.lineJoin='round';c.strokeStyle='#8e9d87';c.lineWidth=102;c.beginPath();c.moveTo(550,1000);c.lineTo(550,520);c.lineTo(875,440);c.lineTo(875,390);c.moveTo(550,520);c.lineTo(245,435);c.moveTo(550,520);c.lineTo(535,280);c.moveTo(550,740);c.lineTo(840,785);c.moveTo(550,740);c.lineTo(230,830);c.stroke();c.strokeStyle='#d5d3bd';c.lineWidth=84;c.stroke();c.strokeStyle='#e2dfca';c.lineWidth=70;c.stroke();rr(470,480,150,100,3,'#aaa994','#7a8775');rr(481,491,128,78,2,'#c9c5ad');label('MINING BASE',545,529,'#6b7767',12);label('깊은산 기지',545,552,'#3a5245',18);for(const [x,y,s]of [[60,90,1.4],[100,170,1.1],[1030,120,1.3],[1020,530,1.4],[1010,900,1.3],[80,950,1.4],[380,950,1],[390,90,1.1],[64,530,1.1],[400,700,.8],[720,970,.8]])tree(x,y,s);for(let i=0;i<7;i++){const x=360+i*29;rr(x,924,6,25,0,'#8f876d');rr(x,933,27,4,0,'#a79e80')}for(const b of buildings)building(b);npc(350,470,'#c3995d',true);npc(745,815,'#748b98');npc(314,846,'#899075',true);label('정비사',350,432,'#405b4a',11);label('거래 담당',745,776,'#405b4a',11)}
+function gem(x,y,o,rich=false){const i=ores.indexOf(o);ellipse(x+2,y+13,16,4,'#172d3033');if(i<4){poly([[x-15,y+6],[x-11,y-7],[x+2,y-12],[x+15,y-3],[x+12,y+12],[x-6,y+14]],'#707a77','#384e49');for(const [dx,dy]of [[-7,-2],[4,-5],[6,6]])poly([[x+dx-4,y+dy],[x+dx,y+dy-4],[x+dx+6,y+dy],[x+dx+3,y+dy+5]],o.color,'#ffffff66')}else if(o.name==='진주'){ellipse(x,y,12,12,'#e7e7df');ellipse(x-4,y-5,4,4,'#fff')}else{poly([[x-14,y+7],[x-8,y-8],[x,y-17],[x+11,y-9],[x+16,y+7],[x+1,y+15]],o.color,'#3b5654');poly([[x,y-17],[x+1,y+15],[x-8,y-8]],'#fff6');poly([[x+1,y+15],[x+11,y-9],[x+16,y+7]],'#243e492b')}if(rich){rr(x-19,y-19,8,3,0,'#e8ae32');rr(x-19,y-19,3,8,0,'#e8ae32');rr(x+12,y+15,8,3,0,'#e8ae32')}}
+function mineDraw(){if(window.DeepminePixelArt?.ready){pixelMineDraw();return}const a=areaInfo(),pal=a.theme;c.fillStyle='#c1c5bb';c.fillRect(0,0,gw*T,gh*T);const x0=Math.max(0,Math.floor((cam.x-vw/zoom/2)/T)),x1=Math.min(gw-1,Math.ceil((cam.x+vw/zoom/2)/T)),y0=Math.max(0,Math.floor((cam.y-vh/zoom/2)/T)),y1=Math.min(gh-1,Math.ceil((cam.y+vh/zoom/2)/T));for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const t=tile(x,y),xx=x*T,yy=y*T,seen=discovered[y]?.[x],visible=dist(p,center(x,y))<view();if(!seen){rr(xx,yy,T+.4,T+.4,0,'#344945');continue}if(['dirt','rock','ore','bedrock'].includes(t.k)){rr(xx+2,yy+4,T-4,T-4,2,'#263b3944');rr(xx+2,yy+1,T-4,T-5,2,t.k==='bedrock'?'#43534f':t.k==='dirt'?'#8b8a74':'#717f7b','#53625a');ellipse(xx+13,yy+8,6,2.2,'#fff3');if(t.k==='ore'){if(t.core){ellipse(xx+21,yy+21,20,18,'#f3ddb788');gem(xx+21,yy+20,ores[t.ore],true);label('✦',xx+21,yy-5,'#b08753',14)}else gem(xx+21,yy+21,ores[t.ore],t.rich)}if(t.k==='ore'&&visible){rr(xx+1,yy+28,40,12,4,'#fff9e8');label(ores[t.ore].name,xx+21,yy+37,'#334c45',8)}if(t.k==='rock'){poly([[xx+9,yy+28],[xx+13,yy+14],[xx+28,yy+11],[xx+34,yy+28]],'#9aaba4','#586f65')}if(t.hp<t.max){rr(xx+7,yy+34,28,3,2,'#86957e66');rr(xx+7,yy+34,28*Math.max(0,t.hp/t.max),3,2,'#dba672')}}else{if(t.v===0){if(area==='grove'){rr(xx+15,yy+20,6,9,3,'#e7d8bd');ellipse(xx+18,yy+20,10,5,'#dda9a1')}else if(area==='tide'){c.strokeStyle='#90b9ba66';c.lineWidth=2;c.beginPath();c.arc(xx+20,yy+20,8,.2,2.7);c.stroke()}else if(area==='frost'){ellipse(xx+13,yy+19,2,2,'#fff9');ellipse(xx+30,yy+27,2,2,'#fff9')}else if(area==='astral'){label('✧',xx+20,yy+27,'#f9ecc4',16)}else if(area==='meadow')rr(xx+17,yy+20,6,2,0,'#a4aba0');else ellipse(xx+21,yy+21,3,1,'#a492c355')}if(t.k==='stairs'){rr(xx+3,yy+4,36,35,12,'#a3ac8e','#8d9c80');rr(xx+10,yy+7,4,29,2,'#f2e1bb');rr(xx+28,yy+7,4,29,2,'#f2e1bb');for(let i=0;i<3;i++)rr(xx+11,yy+10+i*9,20,4,2,'#fff0ce');rr(xx-8,yy-16,58,16,5,'#fff9dc');label('아래층 ↓',xx+21,yy-4,'#5f562f',10)}if(t.k==='chest'){rr(xx+6,yy+13,30,23,7,'#dfbd92','#a49b7f');rr(xx+6,yy+11,30,11,6,'#f0d4a7','#a49b7f');rr(xx+19,yy+18,6,9,3,'#fff0b9')}if(t.k==='charger'){rr(xx+11,yy+11,21,28,4,'#65b889','#375e4a');rr(xx+17,yy+7,9,5,2,'#375e4a');label('ϟ',xx+22,yy+30,'#f6f4c4',24)}}if(!visible)rr(xx,yy,T+.3,T+.3,0,'#34494388')}
+for(const e of enemies){if(dist(e,p)>view())continue;ellipse(e.x,e.y+8,17,5,'#24343c33');for(const side of [-1,1])for(let j=-1;j<=1;j++){c.strokeStyle='#44515b';c.lineWidth=3;c.beginPath();c.moveTo(e.x+side*9,e.y+j*6);c.lineTo(e.x+side*19,e.y+j*10+4);c.stroke()}ellipse(e.x,e.y,12,16,'#68717b');rr(e.x-1,e.y-12,2,23,0,'#b5b4a1');rr(e.x-6,e.y-11,12,4,1,'#dca654');if(e.hp<e.max){rr(e.x-14,e.y-23,28,3,2,'#d6c9d3');rr(e.x-14,e.y-23,28*e.hp/e.max,3,2,'#b395bf')}}}
+function playerDraw(){if(window.DeepminePixelArt?.ready){pixelPlayerDraw();return}const moving=!!(input?.drag||keys.size||route.length),step=moving?Math.sin(walk)*3:0,skin=equipItem('skin'),col={basic:'#dca13f',bunny:'#748c9e',mole:'#9a7652',robot:'#4c9b91',star:'#80719b'}[skin.id];ellipse(p.x,p.y+8,14,5,'#172d3244');c.save();c.translate(p.x,p.y+(moving?Math.abs(step)*-.25:0));rr(-10,-24,20,24,3,'#415a61','#294047');rr(-12,-20,24,15,3,col,'#344b49');rr(-8,-20,3,14,0,'#ecd896');rr(5,-20,3,14,0,'#ecd896');rr(-10,0+step,8,11,2,'#30464a');rr(3,0-step,8,11,2,'#30464a');rr(-10,-38,20,16,5,'#cda582','#6c6957');rr(-12,-44,24,12,5,col,'#4c5b51');rr(-15,-34,30,4,1,'#3f5554');rr(-8,-29,16,5,1,'#334b51');rr(-2,-40,6,6,1,'#fff3b7');rr(-16,-19,6,20,2,'#516963');rr(11,-16,6,14,2,'#b69368');c.save();c.translate(p.face*17,-4);const swing=attackClock>0?Math.sin(attackClock/interval()*Math.PI):0;c.rotate(p.face*(-.3-swing*.9));if(equipItem('tool').icon==='drill'){rr(-7,-16,15,22,2,'#dca03c','#344a4d');poly([[-5,-16],[1,-31],[7,-16]],'#c4d6d7','#344a4d');rr(-3,6,7,8,1,'#40585c')}else{rr(-2,-14,5,29,1,'#a57c48','#514f3c');poly([[-16,-12],[-8,-20],[13,-19],[17,-11],[6,-14],[-4,-14]],'#b9cdd0','#3c575b');if(equipItem('tool').icon==='hammer')rr(-12,-21,26,14,1,'#7d969e','#334e58')}c.restore();c.restore();if(clock-skillRing<.6){const age=clock-skillRing;c.strokeStyle=`rgba(219,156,43,${1-age/.6})`;c.lineWidth=3;c.beginPath();c.arc(p.x,p.y,25+age*150,0,7);c.stroke()}}
 function townDraw(){if(!townCache){townCache=document.createElement('canvas');townCache.width=1650;townCache.height=1575;const main=c;c=townCache.getContext('2d');c.scale(1.5,1.5);townScene();c=main}c.drawImage(townCache,0,0,1100,1050);if(near?.door){ellipse(near.door.x,near.door.y+4,25,9,'#f5d59499');label('이용하기',near.door.x,near.door.y-18,'#7b8062',10)}}
 function draw(){c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,vw,vh);c.fillStyle=mode==='town'?'#b8c6aa':'#c1c5bb';c.fillRect(0,0,vw,vh);c.save();c.translate(vw/2,vh/2);c.scale(zoom,zoom);c.translate(-cam.x,-cam.y);if(mode==='town')townDraw();else mineDraw();if(route.length){c.strokeStyle='#7c9c8dbb';c.lineWidth=2;c.setLineDash([3,8]);c.beginPath();c.moveTo(p.x,p.y);for(const n of route)c.lineTo(n.x,n.y);c.stroke();c.setLineDash([])}if(goal){const pulse=1+Math.sin(clock*5)*.12;c.strokeStyle='#b58a59';c.lineWidth=2;c.beginPath();c.ellipse(goal.x,goal.y,12*pulse,6*pulse,0,0,7);c.stroke()}playerDraw();for(const a of particles){c.fillStyle=a.color;c.globalAlpha=Math.max(0,a.life/a.max);c.fillRect(a.x,a.y,3,3)}c.globalAlpha=1;for(const e of effects){const age=clock-e.born;label(e.text,e.x,e.y-22-age*30,e.color,age<.2?13:11)}if(mode==='mine'){const light=c.createRadialGradient(p.x,p.y,view()*.4,p.x,p.y,view()*1.2);light.addColorStop(0,'#a5b6ab00');light.addColorStop(1,'#9cadb055');c.fillStyle=light;c.fillRect(cam.x-vw/zoom,cam.y-vh/zoom,vw/zoom*2,vh/zoom*2)}c.restore();if(shake>0){c.fillStyle=`rgba(210,110,99,${shake*.12})`;c.fillRect(0,0,vw,vh)}}
 function update(dt){attackClock=Math.max(0,attackClock-dt);shake=Math.max(0,shake-dt*2);let moved=false,dx=0,dy=0;if(keys.has('a')||keys.has('arrowleft'))dx--;if(keys.has('d')||keys.has('arrowright'))dx++;if(keys.has('w')||keys.has('arrowup'))dy--;if(keys.has('s')||keys.has('arrowdown'))dy++;if(input?.drag){dx=input.dx;dy=input.dy;const len=Math.hypot(dx,dy);if(len>4){const speed=clamp((len-4)/30*save.settings.sensitivity,.2,1);moved=moveVec(dx,dy,dt*speed);if(mode==='mine'&&!moved){const a=Math.atan2(dy,dx),tx=Math.floor((p.x+Math.cos(a)*27)/T),ty=Math.floor((p.y+Math.sin(a)*27)/T);p.angle=a;dig(tx,ty)}}}else if(dx||dy){moved=moveVec(dx,dy,dt);if(mode==='mine'&&!moved){const a=Math.atan2(dy,dx);p.angle=a;dig(Math.floor((p.x+Math.cos(a)*27)/T),Math.floor((p.y+Math.sin(a)*27)/T))}}else if(route.length){const n=route[0],d=dist(p,n);if(mode==='mine'&&n.tx!==undefined&&['dirt','rock','ore'].includes(tile(n.tx,n.ty)?.k)){if(d<T*1.5){if(!dig(n.tx,n.ty)){route=[];goal=null}}else moved=moveVec(n.x-p.x,n.y-p.y,Math.min(dt,(d-T*.95)/moveSpeed()))}else if(d<3){route.shift();if(!route.length)goal=null}else{moved=moveVec(n.x-p.x,n.y-p.y,Math.min(dt,d/moveSpeed()));if(!moved){route=[];goal=null}}}
